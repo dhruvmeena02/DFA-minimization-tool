@@ -52,6 +52,20 @@ def dfa_to_response(dfa: DFA, label: str) -> dict:
     }
 
 
+def convert_sets_to_lists(obj):
+    """
+    Recursively convert all set and frozenset objects to lists so the
+    structure is fully JSON-serializable before being passed to jsonify().
+    """
+    if isinstance(obj, (set, frozenset)):
+        return [convert_sets_to_lists(item) for item in obj]
+    if isinstance(obj, dict):
+        return {key: convert_sets_to_lists(value) for key, value in obj.items()}
+    if isinstance(obj, list):
+        return [convert_sets_to_lists(item) for item in obj]
+    return obj
+
+
 @app.route('/api/process', methods=['POST'])
 def process():
     """
@@ -105,7 +119,7 @@ def process():
             print(f"[DEBUG] minimize_dfa completed: {len(result_dfa.states)} states")
             output_data = dfa_to_response(result_dfa, 'Minimized DFA')
             print("[DEBUG] dfa_to_response completed")
-            steps = [min_steps]  # wrap in list for consistent structure
+            steps = [convert_sets_to_lists(min_steps)]  # wrap in list for consistent structure
             print(f"[DEBUG] Steps prepared, type={type(steps)}")
 
         else:
